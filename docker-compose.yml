@@ -1,0 +1,22 @@
+services:
+  link_shortener:
+    build:
+      context: ./internal/link
+      dockerfile: app.Dockerfile
+    ports:
+      - "8081:80"
+  postgres:
+    image: "postgres:15.4"
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      PGDATA: /data/postgres
+      TZ: Asia/Tehran
+    volumes:
+        - postgresql:/data/postgres
+        - ./docker/database:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+volumes:
+  postgresql:
