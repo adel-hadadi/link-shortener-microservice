@@ -5,6 +5,7 @@ services:
       dockerfile: app.Dockerfile
     ports:
       - "8081:80"
+
   postgres:
     image: "postgres:15.4"
     environment:

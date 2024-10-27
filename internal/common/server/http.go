@@ -5,8 +5,10 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/adel-hadadi/link-shotener/internal/common/logs"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/sirupsen/logrus"
 )
 
 func RunHTTPServer(createHandler func(router chi.Router) http.Handler) {
@@ -35,4 +37,5 @@ func setMiddleware(router *chi.Mux) {
 	router.Use(middleware.Heartbeat("/ping"))
 	router.Use(middleware.RealIP)
 	router.Use(middleware.Logger)
+	router.Use(logs.NewStructuredLogger(logrus.StandardLogger()))
 }
