@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
 )
 
 // ServerInterface represents all server handlers.
@@ -16,6 +17,9 @@ type ServerInterface interface {
 
 	// (POST /links)
 	CreateLink(w http.ResponseWriter, r *http.Request)
+
+	// (GET /links/{shortLink})
+	RedirectLink(w http.ResponseWriter, r *http.Request, shortLink string)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -24,6 +28,11 @@ type Unimplemented struct{}
 
 // (POST /links)
 func (_ Unimplemented) CreateLink(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /links/{shortLink})
+func (_ Unimplemented) RedirectLink(w http.ResponseWriter, r *http.Request, shortLink string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -44,6 +53,34 @@ func (siw *ServerInterfaceWrapper) CreateLink(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateLink(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// RedirectLink operation middleware
+func (siw *ServerInterfaceWrapper) RedirectLink(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "shortLink" -------------
+	var shortLink string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "shortLink", chi.URLParam(r, "shortLink"), &shortLink, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "shortLink", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RedirectLink(w, r, shortLink)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -168,6 +205,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/links", wrapper.CreateLink)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/links/{shortLink}", wrapper.RedirectLink)
 	})
 
 	return r

@@ -41,3 +41,19 @@ func (h HttpServer) CreateLink(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 }
+
+func (h HttpServer) RedirectLink(w http.ResponseWriter, r *http.Request, shortLink string) {
+	link, err := h.app.Services.LinkService.Get(r.Context(), shortLink)
+	if err != nil {
+		httperr.RespondWithSlugError(err, w, r)
+		return
+	}
+
+	err = h.app.Services.ClickService.Create(r.Context(), service.CreateClick{LinkID: link.ID, IPAddress: r.RemoteAddr})
+	if err != nil {
+		httperr.RespondWithSlugError(err, w, r)
+		return
+	}
+
+	http.Redirect(w, r, link.OriginalLink, http.StatusFound)
+}

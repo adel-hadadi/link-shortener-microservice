@@ -8,11 +8,13 @@ import (
 )
 
 func NewApplication(db *sqlx.DB) app.Application {
-	linkRepository := repository.NewLinkRepository(db)
+	linkRepo := repository.NewLinkRepository(db)
+	clickRepo := repository.NewClickRepository(db)
 
 	return app.Application{
 		Services: app.Services{
-			LinkService: service.NewLinkService(linkRepository),
+			LinkService:  service.NewLinkService(linkRepo),
+			ClickService: service.NewClickService(clickRepo),
 		},
 	}
 }

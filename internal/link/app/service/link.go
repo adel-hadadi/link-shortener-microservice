@@ -18,6 +18,7 @@ type CreateLink struct {
 
 type linkRepository interface {
 	Create(ctx context.Context, originalLink, shortLink string) error
+	GetByShortLink(ctx context.Context, link string) (Link, error)
 }
 
 func NewLinkService(repo linkRepository) LinkService {
@@ -45,4 +46,13 @@ func generateShortCode(url string) string {
 	hash := sha1.Sum([]byte(url))
 	shortURL := base64.URLEncoding.EncodeToString(hash[:])[:6] // Limit to 6 characters
 	return shortURL
+}
+
+func (s LinkService) Get(ctx context.Context, shortLink string) (Link, error) {
+	link, err := s.repo.GetByShortLink(ctx, shortLink)
+	if err != nil {
+		return Link{}, apperr.NewSlugError(err.Error(), "not-found")
+	}
+
+	return link, nil
 }
