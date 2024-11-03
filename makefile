@@ -16,5 +16,8 @@ up-build: build-shortener
 logs:
 	@docker compose logs -f
 
+ps:
+	@docker compose ps
+
 openapi-gen:
 	@./scripts/openapi-http.sh link internal/link/ports ports
