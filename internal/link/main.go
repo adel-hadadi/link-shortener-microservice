@@ -1,22 +1,30 @@
 package main
 
+import _ "github.com/adel-hadadi/link-shotener/internal/common/setup"
+
 import (
 	"fmt"
-	"net/http"
 	"os"
 
+	"github.com/adel-hadadi/link-shotener/internal/common/genproto/link"
 	"github.com/adel-hadadi/link-shotener/internal/common/server"
 	"github.com/adel-hadadi/link-shotener/internal/link/ports"
 	"github.com/adel-hadadi/link-shotener/internal/link/service"
-	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+	"google.golang.org/grpc"
 )
 
-const ErrConnectToDB = "error on connecting to database: %w"
+const (
+	ErrConnectToDB = "error on connecting to database: %w"
+	ErrLoadEnv     = "error on loading .env file: %w"
+)
 
 func main() {
-	godotenv.Load()
+	if err := godotenv.Load(); err != nil {
+		panic(fmt.Errorf(ErrLoadEnv, err))
+	}
 
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Tehran",
@@ -32,12 +40,11 @@ func main() {
 		panic(fmt.Errorf(ErrConnectToDB, err))
 	}
 
-	app := service.NewApplication(db)
+	app, cleanup := service.NewApplication(db)
+	defer cleanup()
 
-	server.RunHTTPServer(func(router chi.Router) http.Handler {
-		return ports.HandlerFromMux(
-			ports.NewHttpServer(app),
-			router,
-		)
+	server.RunGRPCServer(func(server *grpc.Server) {
+		svc := ports.NewGrpcServer(app)
+		link.RegisterLinkServiceServer(server, svc)
 	})
 }

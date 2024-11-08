@@ -35,7 +35,11 @@ func setMiddleware(router *chi.Mux) {
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.Heartbeat("/ping"))
-	router.Use(middleware.RealIP)
 	router.Use(middleware.Logger)
 	router.Use(logs.NewStructuredLogger(logrus.StandardLogger()))
+
+	router.Use(
+		middleware.SetHeader("X-Content-Type-Options", "nosniff"),
+		middleware.SetHeader("X-Frame-Options", "deny"),
+	)
 }

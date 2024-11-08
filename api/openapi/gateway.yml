@@ -1,0 +1,77 @@
+openapi: "3.0.0"
+info:
+  title: Api Gateway
+  description: TODO
+  version: 1.0.0
+servers:
+  - url: "http://{hostname}/api"
+    variables:
+      hostname:
+        default: localhost
+security:
+  - bearerAuth: []
+paths:
+  /{shortURL}:
+    get:
+      operationId: redirectToURL
+      parameters:
+        - in: path
+          name: shortURL
+          required: true
+          schema:
+            type: string
+      responses:
+        '301':
+          description: Redirect to original URL
+          headers:
+            Location:
+              description: URL to which the request is redirected
+              schema:
+                type: string
+                format: url
+          content: {}
+        '404':
+          description: Link not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Link not found"
+
+  /links:
+    post:
+      operationId: createLink
+      requestBody:
+        description: TODO
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLink'
+      responses:
+        '201':
+          description: todo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Link'
+
+components:
+  schemas:
+    Link:
+      type: object
+      required: [ original_link, short_link ]
+      properties:
+        original_link:
+          type: string
+        short_link:
+          type: string
+    CreateLink:
+      type: object
+      required: [ original_link ]
+      properties:
+        original_link:
+          type: string

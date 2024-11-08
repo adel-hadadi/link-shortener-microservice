@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package report;
+
+option go_package = "github.com/adel-hadadi/link-shortener/internal/report";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+service ReportService {
+  rpc LinkClicked(LinkClickedRequest) returns (google.protobuf.Empty) {}
+}
+
+message LinkClickedRequest {
+  string short_url = 1;
+  google.protobuf.Timestamp clicked_at = 2;
+}

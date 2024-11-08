@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package link;
+
+option go_package = "github.com/adel-hadadi/link-shortener/internal/link";
+
+service LinkService {
+  rpc Create(CreateLinkRequest) returns (LinkResponse) {}
+  rpc Get(GetLinkRequest) returns (LinkResponse) {}
+}
+
+message CreateLinkRequest {
+  string original_link = 1;
+}
+
+message GetLinkRequest {
+    string short_link = 1;
+}
+
+message LinkResponse {
+    string original_link = 1;
+    string short_link = 2;
+}

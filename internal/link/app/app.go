@@ -7,6 +7,5 @@ type Application struct {
 }
 
 type Services struct {
-	LinkService  service.LinkService
-	ClickService service.ClickService
+	LinkService service.LinkService
 }

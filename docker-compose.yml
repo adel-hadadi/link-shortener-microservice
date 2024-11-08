@@ -1,10 +1,34 @@
 services:
-  link_shortener:
+  api-gateway:
+    build:
+      context: ./internal/gateway
+      dockerfile: app.Dockerfile
+    ports:
+      - "80:80"
+    networks:
+      - link-shortener
+
+  link-grpc:
     build:
       context: ./internal/link
       dockerfile: app.Dockerfile
     ports:
       - "8081:80"
+    environment:
+      SERVER_TO_RUN: grpc
+    networks:
+      - link-shortener
+
+  report-grpc:
+    build:
+      context: ./internal/report
+      dockerfile: app.Dockerfile
+    volumes:
+      - ./internal/report/storage:/app/storage/
+    ports:
+      - "8082:80"
+    networks:
+      - link-shortener
 
   postgres:
     image: "postgres:15.4"
@@ -15,10 +39,25 @@ services:
       PGDATA: /data/postgres
       TZ: Asia/Tehran
     volumes:
-        - postgresql:/data/postgres
-        - ./docker/database:/docker-entrypoint-initdb.d
+      - postgresql:/data/postgres
+      - ./docker/database:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+    networks:
+      - link-shortener
+
+  mongo:
+    image: 'mongo:4.2.16-bionic'
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: report
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - ./db-data/mongo/:/data/db
+    networks:
+      - link-shortener
 
   minio:
     image: "minio/minio:latest"
@@ -36,6 +75,12 @@ services:
       retries: 5
     volumes:
       - ./minio/data:/data
+    networks:
+      - link-shortener
 
 volumes:
   postgresql:
+
+networks:
+  link-shortener:
+    driver: bridge

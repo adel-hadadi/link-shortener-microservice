@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"database/sql"
 	"errors"
 
 	"github.com/lib/pq"
@@ -76,4 +77,8 @@ func IsSQLDuplicateEntry(err error) bool {
 	}
 
 	return false
+}
+
+func IsSQLNoRows(err error) bool {
+	return errors.Is(err, sql.ErrNoRows)
 }
