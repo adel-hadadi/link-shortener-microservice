@@ -55,7 +55,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: password
     volumes:
-      - ./db-data/mongo/:/data/db
+      - mongo:/data/db
     networks:
       - link-shortener
 
@@ -80,6 +80,7 @@ services:
 
 volumes:
   postgresql:
+  mongo:
   minio-data:
 
 networks:
