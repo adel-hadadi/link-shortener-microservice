@@ -2,7 +2,8 @@ package ports
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"io"
 	"time"
 
 	"github.com/adel-hadadi/link-shotener/internal/common/genproto/report"
@@ -23,8 +24,6 @@ func NewGrpcServer(app app.Application) GrpcServer {
 func (s GrpcServer) LinkClicked(ctx context.Context, req *report.LinkClickedRequest) (*empty.Empty, error) {
 	clickedAt := protoTimestampToTime(req.ClickedAt)
 
-	log.Println("clicked at => ", clickedAt)
-
 	err := s.app.Services.ReportService.LinkClicked(
 		ctx,
 		service.LinkClickedReq{
@@ -37,6 +36,32 @@ func (s GrpcServer) LinkClicked(ctx context.Context, req *report.LinkClickedRequ
 	}
 
 	return &empty.Empty{}, nil
+}
+
+func (s GrpcServer) DownloadReport(req *report.DownloadRequest, stream report.ReportService_DownloadReportServer) error {
+	buffer, err := s.app.Services.ReportService.DownloadReport(context.Background(), req.FileName)
+	if err != nil {
+		return err
+	}
+
+	chunkSize := 32 * 1024
+	chunk := make([]byte, chunkSize)
+
+	for {
+		n, err := buffer.Read(chunk)
+		if err != nil && err != io.EOF {
+			return fmt.Errorf("failed to read buffer: %v", err)
+		}
+		if n == 0 {
+			break
+		}
+
+		if err := stream.Send(&report.FileChunk{Content: chunk[:n]}); err != nil {
+			return fmt.Errorf("failed to send chunk: %v", err)
+		}
+	}
+
+	return nil
 }
 
 func protoTimestampToTime(timestamp *timestamp.Timestamp) time.Time {

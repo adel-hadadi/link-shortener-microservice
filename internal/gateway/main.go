@@ -24,13 +24,19 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer func() {
-		_ = closeLinkClient()
-	}()
+	defer closeLinkClient()
 
 	linkGrpc := adapters.NewLinkGrpc(client)
 
+	reportClient, closeReportClient, err := grpcClient.NewReportClient()
+	if err != nil {
+		panic(err)
+	}
+	defer closeReportClient()
+
+	reportGrpc := adapters.NewReportGrpc(reportClient)
+
 	server.RunHTTPServer(func(router chi.Router) http.Handler {
-		return HandlerFromMux(NewHttpServer(linkGrpc), router)
+		return HandlerFromMux(NewHttpServer(linkGrpc, reportGrpc), router)
 	})
 }

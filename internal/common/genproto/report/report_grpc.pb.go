@@ -20,7 +20,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ReportService_LinkClicked_FullMethodName = "/report.ReportService/LinkClicked"
+	ReportService_LinkClicked_FullMethodName    = "/report.ReportService/LinkClicked"
+	ReportService_DownloadReport_FullMethodName = "/report.ReportService/DownloadReport"
 )
 
 // ReportServiceClient is the client API for ReportService service.
@@ -28,6 +29,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ReportServiceClient interface {
 	LinkClicked(ctx context.Context, in *LinkClickedRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	DownloadReport(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[FileChunk], error)
 }
 
 type reportServiceClient struct {
@@ -48,11 +50,31 @@ func (c *reportServiceClient) LinkClicked(ctx context.Context, in *LinkClickedRe
 	return out, nil
 }
 
+func (c *reportServiceClient) DownloadReport(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[FileChunk], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &ReportService_ServiceDesc.Streams[0], ReportService_DownloadReport_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[DownloadRequest, FileChunk]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ReportService_DownloadReportClient = grpc.ServerStreamingClient[FileChunk]
+
 // ReportServiceServer is the server API for ReportService service.
 // All implementations should embed UnimplementedReportServiceServer
 // for forward compatibility.
 type ReportServiceServer interface {
 	LinkClicked(context.Context, *LinkClickedRequest) (*empty.Empty, error)
+	DownloadReport(*DownloadRequest, grpc.ServerStreamingServer[FileChunk]) error
 }
 
 // UnimplementedReportServiceServer should be embedded to have
@@ -64,6 +86,9 @@ type UnimplementedReportServiceServer struct{}
 
 func (UnimplementedReportServiceServer) LinkClicked(context.Context, *LinkClickedRequest) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LinkClicked not implemented")
+}
+func (UnimplementedReportServiceServer) DownloadReport(*DownloadRequest, grpc.ServerStreamingServer[FileChunk]) error {
+	return status.Errorf(codes.Unimplemented, "method DownloadReport not implemented")
 }
 func (UnimplementedReportServiceServer) testEmbeddedByValue() {}
 
@@ -103,6 +128,17 @@ func _ReportService_LinkClicked_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ReportService_DownloadReport_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(DownloadRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ReportServiceServer).DownloadReport(m, &grpc.GenericServerStream[DownloadRequest, FileChunk]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ReportService_DownloadReportServer = grpc.ServerStreamingServer[FileChunk]
+
 // ReportService_ServiceDesc is the grpc.ServiceDesc for ReportService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -115,6 +151,12 @@ var ReportService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ReportService_LinkClicked_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "DownloadReport",
+			Handler:       _ReportService_DownloadReport_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "report.proto",
 }

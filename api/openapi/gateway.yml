@@ -59,6 +59,32 @@ paths:
               schema:
                 $ref: '#/components/schemas/Link'
 
+  /reports/download/{filename}:
+    get:
+      description: Stream an Excel file
+      operationId: downloadExcelFile
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          description: the name of the Excel file
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully streams the Excel file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+                example: 2024-11-09
+          headers:
+            Content-Disposition:
+              description: Indicates the file download attachment with the original filename
+              schema:
+                type: string
+
 components:
   schemas:
     Link:

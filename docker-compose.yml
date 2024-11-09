@@ -74,12 +74,13 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - ./minio/data:/data
+      - minio-data:/data
     networks:
       - link-shortener
 
 volumes:
   postgresql:
+  minio-data:
 
 networks:
   link-shortener:

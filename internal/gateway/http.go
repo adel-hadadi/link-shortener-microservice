@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/adel-hadadi/link-shotener/internal/common/server/httperr"
@@ -9,11 +11,12 @@ import (
 )
 
 type HttpServer struct {
-	linkService LinkService
+	linkService   LinkService
+	reportService ReportService
 }
 
-func NewHttpServer(linkService LinkService) HttpServer {
-	return HttpServer{linkService: linkService}
+func NewHttpServer(linkService LinkService, reportService ReportService) HttpServer {
+	return HttpServer{linkService: linkService, reportService: reportService}
 }
 
 func (h HttpServer) CreateLink(w http.ResponseWriter, r *http.Request) {
@@ -45,4 +48,34 @@ func (h HttpServer) RedirectToURL(w http.ResponseWriter, r *http.Request, shortU
 	}
 
 	http.Redirect(w, r, link, 302)
+}
+
+func (h HttpServer) DownloadExcelFile(w http.ResponseWriter, r *http.Request, fileName string) {
+	fileName = fmt.Sprintf("clicks-report-%s.xlsx", fileName)
+
+	stream, err := h.reportService.DownloadReport(r.Context(), fileName)
+	if err != nil {
+		httperr.RespondWithSlugError(err, w, r)
+		return
+	}
+
+	// Set headers for Excel file download
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", fileName))
+	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+	for {
+		chunk, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			httperr.RespondWithSlugError(fmt.Errorf("Failed to receive chunk: %w", err), w, r)
+			return
+		}
+
+		if _, err := w.Write(chunk.Content); err != nil {
+			httperr.RespondWithSlugError(fmt.Errorf("Failed to receive chunk: %w", err), w, r)
+			return
+		}
+	}
 }

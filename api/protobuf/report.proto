@@ -9,9 +9,18 @@ import "google/protobuf/timestamp.proto";
 
 service ReportService {
   rpc LinkClicked(LinkClickedRequest) returns (google.protobuf.Empty) {}
+  rpc DownloadReport(DownloadRequest) returns (stream FileChunk) {}
 }
 
 message LinkClickedRequest {
   string short_url = 1;
   google.protobuf.Timestamp clicked_at = 2;
+}
+
+message DownloadRequest {
+    string file_name = 1;
+}
+
+message FileChunk {
+    bytes content = 1;
 }

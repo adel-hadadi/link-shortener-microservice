@@ -18,6 +18,9 @@ type ServerInterface interface {
 	// (POST /links)
 	CreateLink(w http.ResponseWriter, r *http.Request)
 
+	// (GET /reports/download/{filename})
+	DownloadExcelFile(w http.ResponseWriter, r *http.Request, filename string)
+
 	// (GET /{shortURL})
 	RedirectToURL(w http.ResponseWriter, r *http.Request, shortURL string)
 }
@@ -28,6 +31,11 @@ type Unimplemented struct{}
 
 // (POST /links)
 func (_ Unimplemented) CreateLink(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /reports/download/{filename})
+func (_ Unimplemented) DownloadExcelFile(w http.ResponseWriter, r *http.Request, filename string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -53,6 +61,34 @@ func (siw *ServerInterfaceWrapper) CreateLink(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateLink(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// DownloadExcelFile operation middleware
+func (siw *ServerInterfaceWrapper) DownloadExcelFile(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "filename" -------------
+	var filename string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "filename", chi.URLParam(r, "filename"), &filename, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "filename", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DownloadExcelFile(w, r, filename)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -205,6 +241,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/links", wrapper.CreateLink)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/reports/download/{filename}", wrapper.DownloadExcelFile)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/{shortURL}", wrapper.RedirectToURL)
