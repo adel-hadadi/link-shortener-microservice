@@ -7,7 +7,8 @@ import (
 
 	"github.com/adel-hadadi/link-shotener/internal/report/adapters"
 	"github.com/adel-hadadi/link-shotener/internal/report/app"
-	"github.com/adel-hadadi/link-shotener/internal/report/app/service"
+	"github.com/adel-hadadi/link-shotener/internal/report/app/command"
+	"github.com/adel-hadadi/link-shotener/internal/report/app/query"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -39,8 +40,12 @@ func NewApplication() (app.Application, func()) {
 	repo := adapters.NewMongoClientRepository(mongoClient)
 
 	return app.Application{
-			Services: app.Services{
-				ReportService: service.NewReportService(repo, storage),
+			Commands: app.Commands{
+				GenerateReport: command.NewGenerateReportHandler(repo, storage),
+				LinkClick:      command.NewLinkClickHandler(repo),
+			},
+			Queries: app.Queries{
+				DownloadReport: query.NewDownloadReportHnadler(storage),
 			},
 		}, func() {
 			_ = mongoClient.Disconnect(context.Background())

@@ -2,9 +2,10 @@ package adapters
 
 import (
 	"context"
-	"github.com/adel-hadadi/link-shotener/internal/report/app/service"
-	"go.mongodb.org/mongo-driver/bson"
 	"time"
+
+	"github.com/adel-hadadi/link-shotener/internal/report/app/query"
+	"go.mongodb.org/mongo-driver/bson"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -36,15 +37,14 @@ func (r MongoClickRepository) Create(ctx context.Context, shortURL string, click
 
 	collection := r.mongoClient.Database("report").Collection("clicks")
 	_, err := collection.InsertOne(ctx, Click{
-		ShortURL: shortURL,
-
+		ShortURL:  shortURL,
 		ClickedAt: clickedAt,
 	})
 
 	return err
 }
 
-func (r MongoClickRepository) GetLastHourClicks(ctx context.Context) ([]service.ClickCount, error) {
+func (r MongoClickRepository) GetLastHourClicks(ctx context.Context) ([]query.ClickCount, error) {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
@@ -81,25 +81,13 @@ func (r MongoClickRepository) GetLastHourClicks(ctx context.Context) ([]service.
 	return r.clickCountModelToService(result), nil
 }
 
-func (r MongoClickRepository) clickCountModelToService(counts []ClickCount) []service.ClickCount {
-	res := make([]service.ClickCount, 0, len(counts))
+func (r MongoClickRepository) clickCountModelToService(counts []ClickCount) []query.ClickCount {
+	res := make([]query.ClickCount, 0, len(counts))
 
 	for c := range counts {
-		res = append(res, service.ClickCount{
+		res = append(res, query.ClickCount{
 			ShortURL: counts[c].ShortURL,
 			Count:    counts[c].Count,
-		})
-	}
-
-	return res
-}
-
-func (r MongoClickRepository) clickModelsToService(clicks []Click) []service.Click {
-	res := make([]service.Click, 0, len(clicks))
-	for click := range clicks {
-		res = append(res, service.Click{
-			ShortURL:  clicks[click].ShortURL,
-			ClickedAt: clicks[click].ClickedAt,
 		})
 	}
 

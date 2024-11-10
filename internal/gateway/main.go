@@ -1,5 +1,7 @@
 package main
 
+import _ "github.com/adel-hadadi/link-shotener/internal/common/setup"
+
 import (
 	"fmt"
 	"net/http"
