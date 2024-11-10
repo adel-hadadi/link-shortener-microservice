@@ -2,3 +2,4 @@
 .env
 minio/data/*
 db-data/
+internal/report/reportApp

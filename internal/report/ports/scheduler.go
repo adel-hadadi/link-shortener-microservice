@@ -36,7 +36,7 @@ func RunScheduler(app app.Application) {
 		gocron.NewTask(func() {
 			log.Println("Scheduler is running at ", time.Now())
 
-			if err := app.Services.ReportService.GenerateClicksReport(
+			if err := app.Commands.GenerateReport.Handle(
 				context.Background(),
 				time.Now(),
 			); err != nil {

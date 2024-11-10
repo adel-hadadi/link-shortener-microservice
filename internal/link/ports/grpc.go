@@ -5,7 +5,7 @@ import (
 
 	"github.com/adel-hadadi/link-shotener/internal/common/genproto/link"
 	"github.com/adel-hadadi/link-shotener/internal/link/app"
-	"github.com/adel-hadadi/link-shotener/internal/link/app/service"
+	"github.com/adel-hadadi/link-shotener/internal/link/app/command"
 )
 
 type GrpcServer struct {
@@ -17,24 +17,31 @@ func NewGrpcServer(app app.Application) GrpcServer {
 }
 
 func (s GrpcServer) Create(ctx context.Context, req *link.CreateLinkRequest) (*link.LinkResponse, error) {
-	shortLink, err := s.app.Services.LinkService.Create(ctx, service.CreateLink{OriginalLink: req.OriginalLink})
+	err := s.app.Commands.GenerateShortURL.Handle(ctx, command.GenerateShortURL{
+		OriginalURL: req.OriginalLink,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	shortURL, err := s.app.Queries.RetrieveShortURL.Handle(ctx, req.OriginalLink)
 	if err != nil {
 		return nil, err
 	}
 
 	return &link.LinkResponse{
-		ShortLink:    shortLink,
+		ShortLink:    shortURL,
 		OriginalLink: req.OriginalLink,
 	}, nil
 }
 
 func (s GrpcServer) Get(ctx context.Context, req *link.GetLinkRequest) (*link.LinkResponse, error) {
-	l, err := s.app.Services.LinkService.Get(ctx, req.ShortLink)
+	originalURL, err := s.app.Queries.RetrieveOriginalURL.Handle(ctx, req.ShortLink)
 	if err != nil {
 		return nil, err
 	}
 
 	return &link.LinkResponse{
-		OriginalLink: l.OriginalLink,
+		OriginalLink: originalURL,
 	}, nil
 }

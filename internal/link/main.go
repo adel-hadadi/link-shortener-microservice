@@ -40,8 +40,7 @@ func main() {
 		panic(fmt.Errorf(ErrConnectToDB, err))
 	}
 
-	app, cleanup := service.NewApplication(db)
-	defer cleanup()
+	app := service.NewApplication(db)
 
 	server.RunGRPCServer(func(server *grpc.Server) {
 		svc := ports.NewGrpcServer(app)

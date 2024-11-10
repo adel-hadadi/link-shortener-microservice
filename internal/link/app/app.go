@@ -1,11 +1,20 @@
 package app
 
-import "github.com/adel-hadadi/link-shotener/internal/link/app/service"
+import (
+	"github.com/adel-hadadi/link-shotener/internal/link/app/command"
+	"github.com/adel-hadadi/link-shotener/internal/link/app/query"
+)
 
 type Application struct {
-	Services Services
+	Commands Commands
+	Queries  Queries
 }
 
-type Services struct {
-	LinkService service.LinkService
+type Commands struct {
+	GenerateShortURL command.GenerateShortURLHandler
+}
+
+type Queries struct {
+	RetrieveOriginalURL query.RetrieveOriginalURLHandler
+	RetrieveShortURL    query.RetrieveShortURLHandler
 }

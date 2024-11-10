@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/adel-hadadi/link-shotener/internal/common/server/httperr"
 	"github.com/adel-hadadi/link-shotener/internal/common/server/httpres"
@@ -46,6 +48,13 @@ func (h HttpServer) RedirectToURL(w http.ResponseWriter, r *http.Request, shortU
 		httperr.RespondWithSlugError(err, w, r)
 		return
 	}
+
+	go func() {
+		err := h.reportService.LinkClicked(r.Context(), shortURL, time.Now())
+		if err != nil {
+			log.Println(fmt.Errorf("error on calling link clicked event: %w", err))
+		}
+	}()
 
 	http.Redirect(w, r, link, 302)
 }
