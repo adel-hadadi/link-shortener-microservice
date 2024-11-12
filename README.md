@@ -1,3 +1,5 @@
+![System Design](./img/Link Shortener Microservice.jpg)
+
 # Link Shortener Microservice
 
 A Golang-based link shortener microservice utilizing Clean Architecture principles and the CQRS pattern. This microservice comprises three components: Gateway, Link, and Report services. The API Gateway handles requests, the Link Service manages URL shortening and retrieval, and the Report Service generates daily Excel reports on link usage, storing them in MinIO.
