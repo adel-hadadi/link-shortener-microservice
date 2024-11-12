@@ -1,4 +1,4 @@
-![System Design](./img/Link Shortener Microservice.jpg)
+<image src="./img/Link Shortener Microservice.jpg" alt="System Design"></image>
 
 # Link Shortener Microservice
 
